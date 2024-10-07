@@ -77,11 +77,13 @@ def check_database_update_notification():
 # Create the pop-up window
 def create_notification_window():
     root = Tk()
-    root.title("Expiring Soon Notification")
+    root.title("C-WT Expiring Soon Notification")
 
-    # Set window size and padding for better aesthetics
-    root.geometry("900x600")  # Larger initial window
-    root.config(padx=20, pady=20)
+    # Set the window to be resizable
+    root.resizable(True, True)  # Allow window resizing in both directions
+
+    # Set a larger initial window size
+    root.geometry("1000x700")  # Increase width and height
 
     # Set up a scrollable canvas
     canvas = Canvas(root)
@@ -97,7 +99,9 @@ def create_notification_window():
     )
 
     # Create a window inside the canvas
-    canvas.create_window((0, 0), window=scrollable_frame, anchor="nw", width=860)  # Make the width fit better
+    canvas.create_window((0, 0), window=scrollable_frame, anchor="nw", width=1366)  # Adjust the width to fit content
+
+    # Configure canvas scrolling
     canvas.configure(yscrollcommand=scrollbar.set)
 
     # Fix scrolling issue by binding to the canvas only
@@ -180,7 +184,7 @@ def create_notification_window():
         Label(root, text="Please contact Kasim to update the database file by the end of December.", font=italic_font, fg="red").pack(pady=5)
 
     # Pack the canvas and scrollbar
-    canvas.pack(side="left", fill="both", expand=True)
+    canvas.pack(side="left", fill="both", expand=True)  # Expand the canvas to fit the window
     scrollbar.pack(side="right", fill="y")
 
     root.mainloop()
