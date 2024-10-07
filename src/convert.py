@@ -1,15 +1,14 @@
-import subprocess
-import pandas as pd
 import os
 import shutil
-from io import StringIO  # Import StringIO from the io module
+import pandas as pd
+import platform
 
-# Define relative paths based on the script's location (assuming it's in the "src" folder)
-base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # Root project directory
-data_folder = os.path.join(base_dir, 'data')  # Relative path to the data folder
-database_root_folder = os.path.join(base_dir, 'database_root')  # Folder for the .mdb file
-data_mdb_file = os.path.join(database_root_folder, 'cop.mdb')  # Path to copy the .mdb file in the database_root folder
-excel_file = os.path.join(data_folder, 'database_excel.xlsx')  # Path for the Excel file
+# Define relative paths based on the script's location
+base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+data_folder = os.path.join(base_dir, 'data')
+database_root_folder = os.path.join(base_dir, 'database_root')
+data_mdb_file = os.path.join(database_root_folder, 'cop.mdb')
+excel_file = os.path.join(data_folder, 'database_excel.xlsx')
 
 # Function to copy MDB file to database_root folder
 def copy_mdb_to_data(source_mdb_file, data_mdb_file):
@@ -24,47 +23,59 @@ def copy_mdb_to_data(source_mdb_file, data_mdb_file):
     except Exception as e:
         print(f"Error copying MDB file: {e}")
 
-# Function to export MDB table to Excel (no CSV)
-def convert_mdb_to_excel(mdb_file, excel_file, table_name):
+if __name__ == '__main__':
     try:
-        # Run mdb-export to export a table from .mdb to CSV format in memory
-        result = subprocess.run(['mdb-export', mdb_file, table_name], capture_output=True, text=True)
+        # Step 1: Specify the source path of the .mdb file
+        source_mdb_file = os.path.join(database_root_folder, 'cop.mdb')
 
-        # Convert the CSV content to DataFrame using StringIO
-        csv_data = result.stdout
-        df = pd.read_csv(StringIO(csv_data))
+        # Step 2: Copy the .mdb file to the database_root folder
+        copy_mdb_to_data(source_mdb_file, data_mdb_file)
 
-        # Save DataFrame to Excel, overwrite if it exists
-        with pd.ExcelWriter(excel_file, engine='openpyxl') as writer:
-            df.to_excel(writer, index=False, sheet_name="Certifikát")
-        print(f"Data converted to {excel_file} with sheet name 'Certifikát'")
-    except Exception as e:
-        print(f"Error converting to Excel: {e}")
+        # Check if operating system is Windows
+        if platform.system() == 'Windows':
+            # Use pyodbc to read the MDB file
+            import pyodbc
 
-# Main logic to copy MDB file and then convert to Excel
-try:
-    # Step 1: Specify the source path of the .mdb file
-    # Assuming the cop.mdb file is already in the project's folder `database_root`
-    source_mdb_file = os.path.join(database_root_folder, 'cop.mdb')
+            conn_str = (
+                r'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};'
+                r'DBQ=' + data_mdb_file + ';'
+            )
+            conn = pyodbc.connect(conn_str)
+            sql = 'SELECT * FROM [Certifikát]'
+            df = pd.read_sql(sql, conn)
+            conn.close()
 
-    # Step 2: Copy the .mdb file to the database_root folder
-    copy_mdb_to_data(source_mdb_file, data_mdb_file)
-
-    # Step 3: List the tables in the .mdb file using mdb-tables
-    result = subprocess.run(['mdb-tables', data_mdb_file], capture_output=True, text=True)
-    tables = result.stdout.split()
-
-    # Check if any tables were found
-    if tables:
-        print("Tables found:", tables)
-        # Export the table named "Certifikát"
-        if "Certifikát" in tables:
-            print(f'Exporting table "Certifikát" to Excel.')
-            # Convert MDB to Excel, no CSV
-            convert_mdb_to_excel(data_mdb_file, excel_file, "Certifikát")
+            # Save DataFrame to Excel
+            with pd.ExcelWriter(excel_file, engine='openpyxl') as writer:
+                df.to_excel(writer, index=False, sheet_name="Certifikát")
+            print(f"Data converted to {excel_file} with sheet name 'Certifikát'")
         else:
-            print('"Certifikát" table not found.')
-    else:
-        print("No tables found in the MDB file.")
-except Exception as e:
-    print(f"Error during operation: {e}")
+            # Use mdb-tools commands on non-Windows systems
+            import subprocess
+            from io import StringIO
+
+            # Step 3: List the tables in the .mdb file using mdb-tables
+            result = subprocess.run(['mdb-tables', data_mdb_file], capture_output=True, text=True)
+            tables = result.stdout.split()
+
+            # Check if any tables were found
+            if tables:
+                print("Tables found:", tables)
+                # Export the table named "Certifikát"
+                if "Certifikát" in tables:
+                    print(f'Exporting table "Certifikát" to Excel.')
+                    # Convert MDB to Excel, no CSV
+                    result = subprocess.run(['mdb-export', data_mdb_file, "Certifikát"], capture_output=True, text=True)
+                    csv_data = result.stdout
+                    df = pd.read_csv(StringIO(csv_data))
+
+                    # Save DataFrame to Excel
+                    with pd.ExcelWriter(excel_file, engine='openpyxl') as writer:
+                        df.to_excel(writer, index=False, sheet_name="Certifikát")
+                    print(f"Data converted to {excel_file} with sheet name 'Certifikát'")
+                else:
+                    print('"Certifikát" table not found.')
+            else:
+                print("No tables found in the MDB file.")
+    except Exception as e:
+        print(f"Error during operation: {e}")

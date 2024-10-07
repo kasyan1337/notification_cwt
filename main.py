@@ -40,13 +40,13 @@ def update_scripts():
             with urllib.request.urlopen(raw_url, context=ssl_context) as response:
                 latest_code = response.read().decode('utf-8')
 
-            # Check if the local version is different from the latest version
-            with open(local_file_path, 'r') as local_file:
+            # Read the local file with explicit encoding
+            with open(local_file_path, 'r', encoding='utf-8') as local_file:
                 local_code = local_file.read()
 
             if local_code != latest_code:
                 # Update the file if it's different
-                with open(local_file_path, 'w') as local_file:
+                with open(local_file_path, 'w', encoding='utf-8') as local_file:
                     local_file.write(latest_code)
                 print(f"{file_name} was updated.")
                 updated = True
