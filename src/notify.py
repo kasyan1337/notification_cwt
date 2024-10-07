@@ -1,8 +1,9 @@
 import os
+from datetime import datetime
 from tkinter import Tk, Checkbutton, Button, BooleanVar, messagebox, Canvas, Scrollbar, Frame, Label
 from tkinter.font import Font, ITALIC
+
 import pandas as pd
-from datetime import datetime
 
 # Define relative paths based on the script's location
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # Root project directory
@@ -177,11 +178,13 @@ def create_notification_window():
 
     # Add the italic message at the bottom
     italic_font = Font(family="Helvetica", size=10, slant=ITALIC)
-    Label(root, text="The database root file needs to be updated every year.\n Date of the last update: 8.10.2024", font=italic_font).pack(pady=10)
+    Label(root, text="The database root file needs to be updated every year.\n Date of the last update: 8.10.2024",
+          font=italic_font).pack(pady=10)
 
     # Check if today is in the second half of December and show the update message
     if check_database_update_notification():
-        Label(root, text="Please contact Kasim to update the database file by the end of December.", font=italic_font, fg="red").pack(pady=5)
+        Label(root, text="Please contact Kasim to update the database file by the end of December.", font=italic_font,
+              fg="red").pack(pady=5)
 
     # Pack the canvas and scrollbar
     canvas.pack(side="left", fill="both", expand=True)  # Expand the canvas to fit the window
