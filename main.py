@@ -14,7 +14,7 @@ sort_script = os.path.join(script_dir, 'sort.py')
 notify_script = os.path.join(script_dir, 'notify.py')
 
 # GitHub raw URLs for the scripts (change branch if necessary)
-RAW_BASE_URL = "https://raw.githubusercontent.com/kasyan1337/notification_cwt/develop"
+RAW_BASE_URL = "https://raw.githubusercontent.com/kasyan1337/notification_cwt/main"
 RAW_FILES = {
     "main.py": f"{RAW_BASE_URL}/main.py",
     "convert.py": f"{RAW_BASE_URL}/src/convert.py",
