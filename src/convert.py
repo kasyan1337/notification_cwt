@@ -1,7 +1,8 @@
 import os
-import shutil
-import pandas as pd
 import platform
+import shutil
+
+import pandas as pd
 
 # Define relative paths based on the script's location
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -10,9 +11,15 @@ database_root_folder = os.path.join(base_dir, 'database_root')
 data_mdb_file = os.path.join(database_root_folder, 'cop.mdb')
 excel_file = os.path.join(data_folder, 'database_excel.xlsx')
 
+
 # Function to copy MDB file to database_root folder
 def copy_mdb_to_data(source_mdb_file, data_mdb_file):
     try:
+        # Check if source and destination are the same
+        if source_mdb_file == data_mdb_file:
+            print("Source and destination MDB files are the same, skipping copy.")
+            return
+
         # Check if database_root folder exists, if not create it
         if not os.path.exists(database_root_folder):
             os.makedirs(database_root_folder)
@@ -22,6 +29,7 @@ def copy_mdb_to_data(source_mdb_file, data_mdb_file):
         print(f"Copied {source_mdb_file} to {data_mdb_file}")
     except Exception as e:
         print(f"Error copying MDB file: {e}")
+
 
 if __name__ == '__main__':
     try:
@@ -37,8 +45,8 @@ if __name__ == '__main__':
             import pyodbc
 
             conn_str = (
-                r'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};'
-                r'DBQ=' + data_mdb_file + ';'
+                    r'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};'
+                    r'DBQ=' + data_mdb_file + ';'
             )
             conn = pyodbc.connect(conn_str)
             sql = 'SELECT * FROM [Certifikát]'
