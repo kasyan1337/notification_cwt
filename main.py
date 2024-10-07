@@ -8,7 +8,7 @@ from tkinter import Tk, messagebox
 # Define the paths to the scripts
 base_dir = os.path.dirname(os.path.abspath(__file__))
 script_dir = os.path.join(base_dir, 'src')
-main_script = os.path.join(base_dir, 'main.py')
+main_script = os.path.join(base_dir, 'main.py')  # You can remove this line if not needed
 convert_script = os.path.join(script_dir, 'convert.py')
 sort_script = os.path.join(script_dir, 'sort.py')
 notify_script = os.path.join(script_dir, 'notify.py')
@@ -67,7 +67,7 @@ def update_scripts():
 # Function to run the scripts
 def run_scripts():
     try:
-        subprocess.run([python_executable, main_script], check=True)
+        # Removed the recursive call to main_script
         subprocess.run([python_executable, convert_script], check=True)
         subprocess.run([python_executable, sort_script], check=True)
         subprocess.run([python_executable, notify_script], check=True)
