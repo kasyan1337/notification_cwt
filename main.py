@@ -1,8 +1,8 @@
 import os
+import ssl
 import subprocess
 import sys
 import urllib.request
-import ssl
 from tkinter import Tk, messagebox
 
 # Define the paths to the scripts
@@ -28,12 +28,14 @@ python_executable = sys.executable
 # Create an SSL context that bypasses SSL verification (not recommended for production environments)
 ssl_context = ssl._create_unverified_context()
 
+
 # Function to download and update the scripts from GitHub raw URLs
 def update_scripts():
     try:
         updated = False
         for file_name, raw_url in RAW_FILES.items():
-            local_file_path = os.path.join(base_dir, file_name) if file_name == 'main.py' else os.path.join(script_dir, file_name)
+            local_file_path = os.path.join(base_dir, file_name) if file_name == 'main.py' else os.path.join(script_dir,
+                                                                                                            file_name)
             print(f"Checking for updates for {file_name}...")
 
             # Download the latest version from GitHub raw
@@ -64,6 +66,7 @@ def update_scripts():
         messagebox.showerror("Error", f"Failed to check for updates: {e}")
         return False  # Continue if there was an error
 
+
 # Function to run the scripts
 def run_scripts():
     try:
@@ -74,6 +77,7 @@ def run_scripts():
     except subprocess.CalledProcessError as e:
         print(f"Error running scripts: {e}")
         messagebox.showerror("Error", f"Error running scripts: {e}")
+
 
 if __name__ == "__main__":
     root = Tk()

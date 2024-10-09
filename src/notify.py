@@ -1,8 +1,9 @@
 import os
+from datetime import datetime
 from tkinter import Tk, Checkbutton, Button, BooleanVar, messagebox, Canvas, Scrollbar, Frame, Label
 from tkinter.font import Font, ITALIC
+
 import pandas as pd
-from datetime import datetime
 
 # Define relative paths based on the script's location
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # Root project directory
@@ -12,6 +13,13 @@ do_not_notify_file = os.path.join(data_folder, 'do_not_notify.xlsx')  # Do not n
 
 # Load the Excel files into DataFrames
 expire_soon_df = pd.read_excel(expire_soon_file)
+
+# Ensure 'Email_sent' and 'Do_not_notify' columns exist in 'expire_soon_df', default to 0
+if 'Email_sent' not in expire_soon_df.columns:
+    expire_soon_df['Email_sent'] = 0
+
+if 'Do_not_notify' not in expire_soon_df.columns:
+    expire_soon_df['Do_not_notify'] = 0
 
 # If the do_not_notify file exists, load it, otherwise create an empty DataFrame
 if os.path.exists(do_not_notify_file):
@@ -112,7 +120,7 @@ def create_notification_window():
     canvas.bind_all("<MouseWheel>", on_mouse_wheel)
 
     # Store the candidate checkboxes
-    check_vars = []
+    check_vars = []  # Will store (candidate_id, var_do_not_notify, var_email_sent)
 
     # Font for identifiers (bold text) and normal text
     bold_font = Font(family="Helvetica", size=12, weight="bold")
@@ -128,16 +136,24 @@ def create_notification_window():
         candidate_id = row['Index']
 
         if not is_in_do_not_notify(candidate_id):
-            var = BooleanVar()
-            check_vars.append((candidate_id, var))
+            var_do_not_notify = BooleanVar()
+            var_email_sent = BooleanVar()
+            # Pre-tick 'Email Sent' checkbox if 'Email_sent' == 1
+            if row.get('Email_sent', 0) == 1:
+                var_email_sent.set(True)
+            check_vars.append((candidate_id, var_do_not_notify, var_email_sent))
             days_message = create_message(row)
 
-            # Create a frame to hold the checkbox and the message
+            # Create a frame to hold the checkboxes and the message
             row_frame = Frame(scrollable_frame)
             row_frame.pack(fill='x', pady=5)
 
-            # Add checkbox before the message
-            Checkbutton(row_frame, text="", variable=var).pack(side='left')
+            # Add 'Do Not Notify' checkbox
+            Checkbutton(row_frame, text="Nezobrazovať", variable=var_do_not_notify, font=bold_font, fg="red").pack(
+                side='left')
+
+            # Add 'Email Sent' checkbox
+            Checkbutton(row_frame, text="Uchádzač upozornený", variable=var_email_sent, fg='green').pack(side='left')
 
             # Display the message in parts, with styles applied only to certain elements
             Label(row_frame, text=f"{row['Number']}  -", font=bold_font).pack(side='left')
@@ -146,6 +162,8 @@ def create_notification_window():
             Label(row_frame, text=f"{row['Index']}", font=bold_font).pack(side='left')
             Label(row_frame, text=f" uchádzača ", font=normal_font).pack(side='left')
             Label(row_frame, text=f"{row['Name']} {row['Surname']}", font=bold_font).pack(side='left')
+            if row['Training_center'] and pd.notna(row['Training_center']):
+                Label(row_frame, text=f"({row['Training_center']})", font=bold_font).pack(side='left')
             Label(row_frame, text=f" na metódu ", font=normal_font).pack(side='left')
             Label(row_frame, text=f"{row['Method']}", font=bold_font).pack(side='left')
             Label(row_frame, text=f" stupeň ", font=normal_font).pack(side='left')
@@ -162,9 +180,20 @@ def create_notification_window():
 
     # Function to handle the OK button click
     def on_ok():
-        selected_candidates = [candidate_id for candidate_id, var in check_vars if var.get()]
-        if selected_candidates:
-            add_to_do_not_notify(selected_candidates)
+        selected_do_not_notify = []
+        for candidate_id, var_do_not_notify, var_email_sent in check_vars:
+            if var_do_not_notify.get():
+                selected_do_not_notify.append(candidate_id)
+            # Update 'Email_sent' column in 'expire_soon_df' for each candidate
+            expire_soon_df.loc[expire_soon_df['Index'] == candidate_id, 'Email_sent'] = int(var_email_sent.get())
+
+        if selected_do_not_notify:
+            add_to_do_not_notify(selected_do_not_notify)
+
+        # Save the updated expire_soon_df back to expire_soon.xlsx
+        with pd.ExcelWriter(expire_soon_file, engine='openpyxl') as writer:
+            expire_soon_df.to_excel(writer, index=False)
+
         root.destroy()
 
     # Create a frame for buttons at the bottom
@@ -177,11 +206,13 @@ def create_notification_window():
 
     # Add the italic message at the bottom
     italic_font = Font(family="Helvetica", size=10, slant=ITALIC)
-    Label(root, text="The database root file needs to be updated every year.\n Date of the last update: 8.10.2024", font=italic_font).pack(pady=10)
+    Label(root, text="The database root file needs to be updated every year.\n Date of the last update: 8.10.2024",
+          font=italic_font).pack(pady=10)
 
     # Check if today is in the second half of December and show the update message
     if check_database_update_notification():
-        Label(root, text="Please contact Kasim to update the database file by the end of December.", font=italic_font, fg="red").pack(pady=5)
+        Label(root, text="Please contact Kasim to update the database file by the end of December.", font=italic_font,
+              fg="red").pack(pady=5)
 
     # Pack the canvas and scrollbar
     canvas.pack(side="left", fill="both", expand=True)  # Expand the canvas to fit the window
