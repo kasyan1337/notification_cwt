@@ -10,16 +10,10 @@ base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # Roo
 data_folder = os.path.join(base_dir, 'data')  # Path to the data folder
 expire_soon_file = os.path.join(data_folder, 'expire_soon.xlsx')  # Expiring soon file
 do_not_notify_file = os.path.join(data_folder, 'do_not_notify.xlsx')  # Do not notify file
+email_sent_file = os.path.join(data_folder, 'email_sent.xlsx')  # Email sent file
 
 # Load the Excel files into DataFrames
 expire_soon_df = pd.read_excel(expire_soon_file)
-
-# Ensure 'Email_sent' and 'Do_not_notify' columns exist in 'expire_soon_df', default to 0
-if 'Email_sent' not in expire_soon_df.columns:
-    expire_soon_df['Email_sent'] = 0
-
-if 'Do_not_notify' not in expire_soon_df.columns:
-    expire_soon_df['Do_not_notify'] = 0
 
 # If the do_not_notify file exists, load it, otherwise create an empty DataFrame
 if os.path.exists(do_not_notify_file):
@@ -27,41 +21,21 @@ if os.path.exists(do_not_notify_file):
 else:
     do_not_notify_df = pd.DataFrame(columns=expire_soon_df.columns)
 
+# If the email_sent file exists, load it, otherwise create an empty DataFrame
+if os.path.exists(email_sent_file):
+    email_sent_df = pd.read_excel(email_sent_file)
+else:
+    email_sent_df = pd.DataFrame(columns=expire_soon_df.columns)
+
 
 # Function to check if a candidate is already in the do_not_notify file
 def is_in_do_not_notify(candidate_id):
     return not do_not_notify_df[do_not_notify_df['Index'] == candidate_id].empty
 
 
-# Function to add selected candidates to the do_not_notify file and update expire_soon.xlsx
-def add_to_do_not_notify(selected_candidates):
-    global do_not_notify_df, expire_soon_df
-    # Add the selected candidates to the do_not_notify DataFrame
-    for candidate_id in selected_candidates:
-        # Use .loc[] to ensure correct DataFrame modifications
-        candidate_row = expire_soon_df.loc[expire_soon_df['Index'] == candidate_id].copy()
-
-        # Set 'Do_not_notify' column to 1 before adding to do_not_notify_df
-        candidate_row['Do_not_notify'] = 1
-        do_not_notify_df = pd.concat([do_not_notify_df, candidate_row], ignore_index=True)
-
-        # Set 'Do_not_notify' column to 1 for this candidate in expire_soon_df
-        expire_soon_df.loc[expire_soon_df['Index'] == candidate_id, 'Do_not_notify'] = 1
-
-    # Save the updated DataFrame to the do_not_notify file
-    with pd.ExcelWriter(do_not_notify_file, engine='openpyxl') as writer:
-        do_not_notify_df.to_excel(writer, index=False)
-
-    # Save the updated expire_soon_df back to expire_soon.xlsx
-    with pd.ExcelWriter(expire_soon_file, engine='openpyxl') as writer:
-        expire_soon_df.to_excel(writer, index=False)
-
-    messagebox.showinfo("Success", "Selected candidates added to the Do Not Notify list.")
-
-
 # Function to create a styled message based on Number_of_days_from_now
 def create_message(row):
-    days = row['Number_of_days_from_now']
+    days = int(row['Number_of_days_from_now'])
     expiry_date = row['Expiry_date']
 
     if days == 0:
@@ -80,6 +54,23 @@ def check_database_update_notification():
     if today.month == 12 and today.day >= 1:
         return True
     return False
+
+
+# Function to add selected candidates to the do_not_notify file
+def add_to_do_not_notify(selected_candidates):
+    global do_not_notify_df
+    # Add the selected candidates to the do_not_notify DataFrame
+    for candidate_id in selected_candidates:
+        # Use .loc[] to ensure correct DataFrame modifications
+        candidate_row = expire_soon_df.loc[expire_soon_df['Index'] == candidate_id].copy()
+        candidate_row['Do_not_notify'] = 1
+        do_not_notify_df = pd.concat([do_not_notify_df, candidate_row], ignore_index=True)
+
+    # Save the updated DataFrame to the do_not_notify file
+    with pd.ExcelWriter(do_not_notify_file, engine='openpyxl') as writer:
+        do_not_notify_df.to_excel(writer, index=False)
+
+    messagebox.showinfo("Success", "Selected candidates added to the Do Not Notify list.")
 
 
 # Create the pop-up window
@@ -138,9 +129,11 @@ def create_notification_window():
         if not is_in_do_not_notify(candidate_id):
             var_do_not_notify = BooleanVar()
             var_email_sent = BooleanVar()
-            # Pre-tick 'Email Sent' checkbox if 'Email_sent' == 1
-            if row.get('Email_sent', 0) == 1:
+
+            # Pre-tick 'Email Sent' checkbox if candidate is in email_sent_df
+            if not email_sent_df[email_sent_df['Index'] == candidate_id].empty:
                 var_email_sent.set(True)
+
             check_vars.append((candidate_id, var_do_not_notify, var_email_sent))
             days_message = create_message(row)
 
@@ -153,7 +146,7 @@ def create_notification_window():
                 side='left')
 
             # Add 'Email Sent' checkbox
-            Checkbutton(row_frame, text="Uchádzač upozornený", variable=var_email_sent, fg='green').pack(side='left')
+            Checkbutton(row_frame, text="Upozornený", variable=var_email_sent, fg='green').pack(side='left')
 
             # Display the message in parts, with styles applied only to certain elements
             Label(row_frame, text=f"{row['Number']}  -", font=bold_font).pack(side='left')
@@ -162,7 +155,7 @@ def create_notification_window():
             Label(row_frame, text=f"{row['Index']}", font=bold_font).pack(side='left')
             Label(row_frame, text=f" uchádzača ", font=normal_font).pack(side='left')
             Label(row_frame, text=f"{row['Name']} {row['Surname']}", font=bold_font).pack(side='left')
-            if row['Training_center'] and pd.notna(row['Training_center']):
+            if row.get('Training_center') and pd.notna(row['Training_center']):
                 Label(row_frame, text=f"({row['Training_center']})", font=bold_font).pack(side='left')
             Label(row_frame, text=f" na metódu ", font=normal_font).pack(side='left')
             Label(row_frame, text=f"{row['Method']}", font=bold_font).pack(side='left')
@@ -170,29 +163,38 @@ def create_notification_window():
             Label(row_frame, text=f"{row['Level']}", font=bold_font).pack(side='left')
 
             # Highlight Number_of_days_from_now and Expiry_date in red or orange
-            days = row['Number_of_days_from_now']
-            if int(days) <= 30:
+            days = int(row['Number_of_days_from_now'])
+            if days <= 30:
                 Label(row_frame, text=f" {days_message}", fg=warning_color, font=warning_font).pack(side='left')
-            elif 31 <= int(days) <= 60:
+            elif 31 <= days <= 60:
                 Label(row_frame, text=f" {days_message}", fg=mild_warning_color, font=warning_font).pack(side='left')
             else:
                 Label(row_frame, text=f" {days_message}", font=warning_font).pack(side='left')
 
     # Function to handle the OK button click
     def on_ok():
+        global email_sent_df  # Add this line to declare email_sent_df as global
         selected_do_not_notify = []
         for candidate_id, var_do_not_notify, var_email_sent in check_vars:
             if var_do_not_notify.get():
                 selected_do_not_notify.append(candidate_id)
-            # Update 'Email_sent' column in 'expire_soon_df' for each candidate
-            expire_soon_df.loc[expire_soon_df['Index'] == candidate_id, 'Email_sent'] = int(var_email_sent.get())
+
+            # Manage email_sent_df
+            if var_email_sent.get():
+                # Add candidate to email_sent_df if not already there
+                if email_sent_df[email_sent_df['Index'] == candidate_id].empty:
+                    candidate_row = expire_soon_df.loc[expire_soon_df['Index'] == candidate_id]
+                    email_sent_df = pd.concat([email_sent_df, candidate_row], ignore_index=True)
+            else:
+                # Remove candidate from email_sent_df if present
+                email_sent_df = email_sent_df[email_sent_df['Index'] != candidate_id]
 
         if selected_do_not_notify:
             add_to_do_not_notify(selected_do_not_notify)
 
-        # Save the updated expire_soon_df back to expire_soon.xlsx
-        with pd.ExcelWriter(expire_soon_file, engine='openpyxl') as writer:
-            expire_soon_df.to_excel(writer, index=False)
+        # Save the updated email_sent_df to email_sent.xlsx
+        with pd.ExcelWriter(email_sent_file, engine='openpyxl') as writer:
+            email_sent_df.to_excel(writer, index=False)
 
         root.destroy()
 
@@ -206,10 +208,10 @@ def create_notification_window():
 
     # Add the italic message at the bottom
     italic_font = Font(family="Helvetica", size=10, slant=ITALIC)
-    Label(root, text="The database root file needs to be updated every year.\n Date of the last update: 8.10.2024",
+    Label(root, text="The database root file needs to be updated every year.\nDate of the last update: 8.10.2024",
           font=italic_font).pack(pady=10)
 
-    # Check if today is in the second half of December and show the update message
+    # Check if today is in December and show the update message
     if check_database_update_notification():
         Label(root, text="Please contact Kasim to update the database file by the end of December.", font=italic_font,
               fg="red").pack(pady=5)
