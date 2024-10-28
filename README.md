@@ -1,6 +1,4 @@
-Here’s a sample README.md file for your project:
-
-Expiring Soon Notification System
+# Expiring Soon Notification System
 
 This project is a notification system that alerts users about certificates that are about to expire. The system reads data from Excel files, displays a list of certificates that will expire soon, and allows users to select certain candidates to exclude from future notifications. It also includes a reminder to update the database root file every year in the second half of December.
 
@@ -94,5 +92,3 @@ If you encounter any issues or have any questions, feel free to contact me:
 
 	•	Email: kjanci@c-wt.sk
 	•	GitHub: kasyan1337
-
-This README.md file provides an overview of your project, including instructions for setup, usage, and a description of how the system works. You can modify it as needed to suit your preferences.
