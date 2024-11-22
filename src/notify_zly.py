@@ -240,7 +240,7 @@ if __name__ == '__main__':
     candidates_to_notify_df = expire_soon_df[~expire_soon_df['Index'].isin(do_not_notify_df['Index'])]
 
     if candidates_to_notify_df.empty:
-        print("There are zero candidates whose certificates are going to expire from Zhuhai.")
+        print("There are zero candidates whose certificates are going to expire from China.")
     else:
         # Run the notification window with candidates to notify
         create_notification_window(candidates_to_notify_df)
