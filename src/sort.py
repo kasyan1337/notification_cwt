@@ -7,11 +7,16 @@ import pandas as pd
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # Root project directory
 data_folder = os.path.join(base_dir, 'data')  # Path to the data folder
 input_excel_file = os.path.join(data_folder, 'database_excel.xlsx')  # Input Excel file
+
+# Output files for other training centers
 expire_soon_file = os.path.join(data_folder, 'expire_soon.xlsx')  # Output file for expiring soon
 already_expired_file = os.path.join(data_folder, 'already_expired.xlsx')  # Output file for already expired
 
+# Output files for the 'ZLY' training center
+expire_soon_file_zly = os.path.join(data_folder, 'expire_soon_zly.xlsx')  # Output file for 'ZLY' expiring soon
+already_expired_file_zly = os.path.join(data_folder, 'already_expired_zly.xlsx')  # Output file for 'ZLY' already expired
+
 if __name__ == '__main__':
-    # Load the Excel file into a DataFrame
     # Load the Excel file into a DataFrame
     df = pd.read_excel(input_excel_file)
 
@@ -19,69 +24,73 @@ if __name__ == '__main__':
     today = datetime.now()
     three_months_later = today + timedelta(days=90)
 
-    # Filter the DataFrame
-    filtered_df = df[pd.to_datetime(df['koniecplatnosti'], format='%m/%d/%y %H:%M:%S') <= three_months_later]
+    # Ensure 'koniecplatnosti' is in datetime format
+    df['koniecplatnosti'] = pd.to_datetime(df['koniecplatnosti'], errors='coerce')
 
-    # Make an explicit copy of the filtered DataFrame
-    filtered_df = filtered_df.copy()
+    # Filter the DataFrame for entries within the next 3 months
+    filtered_df = df[df['koniecplatnosti'] <= three_months_later].copy()
 
-    # Calculate the number of days from now without triggering the warning
+    # Calculate the number of days from now
     filtered_df['Number_of_days_from_now'] = filtered_df['koniecplatnosti'].apply(
-        lambda x: (pd.to_datetime(x) - today).days)
+        lambda x: (x - today).days)
+
+    # Fill missing 'Training_center' values with empty strings
+    filtered_df['Training_center'] = filtered_df['školiace stredisko'].fillna('')
 
     # Split into two DataFrames: one for expired (negative days), one for expiring soon (zero or positive days)
-    expire_soon_df = filtered_df[filtered_df['Number_of_days_from_now'] >= 0]
-    already_expired_df = filtered_df[filtered_df['Number_of_days_from_now'] < 0]
+    expire_soon_df = filtered_df[filtered_df['Number_of_days_from_now'] >= 0].copy()
+    already_expired_df = filtered_df[filtered_df['Number_of_days_from_now'] < 0].copy()
 
-    # Create a new DataFrame with the required columns and formatting
-    output_data_soon = {
-        'Number': range(1, len(expire_soon_df) + 1),  # 1, 2, 3, etc.
-        'Identification': expire_soon_df['Identifikácia'],  # Column A
-        'Index': expire_soon_df['index'],  # Column B
-        'Name': expire_soon_df['meno'],  # Column E
-        'Surname': expire_soon_df['priezvisko'],  # Column F
-        'Method': expire_soon_df['metoda'],  # Column G
-        'Level': expire_soon_df['stupeň'],  # Column H (Slovak diacritic)
-        'Expiry_date': expire_soon_df['koniecplatnosti'].apply(lambda x: pd.to_datetime(x).strftime('%d/%m/%y')),
-        'Number_of_days_from_now': expire_soon_df['Number_of_days_from_now'],
-        'Training_center': expire_soon_df['školiace stredisko'],  # Column AC
-    }
+    # Split each DataFrame based on 'Training_center' being 'ZLY' or not
+    def split_by_training_center(df):
+        df['Training_center_upper'] = df['Training_center'].str.upper()
+        df_zly = df[df['Training_center_upper'] == 'ZLY'].copy()
+        df_rest = df[df['Training_center_upper'] != 'ZLY'].copy()
+        return df_zly, df_rest
 
-    # Data for already expired
-    output_data_expired = {
-        'Number': range(1, len(already_expired_df) + 1),  # 1, 2, 3, etc.
-        'Identification': already_expired_df['Identifikácia'],  # Column A
-        'Index': already_expired_df['index'],  # Column B
-        'Name': already_expired_df['meno'],  # Column E
-        'Surname': already_expired_df['priezvisko'],  # Column F
-        'Method': already_expired_df['metoda'],  # Column G
-        'Level': already_expired_df['stupeň'],  # Column H (Slovak diacritic)
-        'Expiry_date': already_expired_df['koniecplatnosti'].apply(lambda x: pd.to_datetime(x).strftime('%d/%m/%y')),
-        'Number_of_days_from_now': already_expired_df['Number_of_days_from_now'],
-        'Training_center': already_expired_df['školiace stredisko'],  # Column AC
-    }
+    expire_soon_df_zly, expire_soon_df_rest = split_by_training_center(expire_soon_df)
+    already_expired_df_zly, already_expired_df_rest = split_by_training_center(already_expired_df)
 
-    # Convert the dictionaries to DataFrames
-    expire_soon_output_df = pd.DataFrame(output_data_soon)
-    already_expired_output_df = pd.DataFrame(output_data_expired)
+    # Function to process and save DataFrame
+    def process_and_save(df_to_process, output_file, sort_ascending):
+        if df_to_process.empty:
+            print(f"No data to save to {output_file}")
+            return
 
-    # Sort both DataFrames by 'Number_of_days_from_now'
-    expire_soon_output_df = expire_soon_output_df.sort_values(by='Number_of_days_from_now', ascending=True)
-    already_expired_output_df = already_expired_output_df.sort_values(by='Number_of_days_from_now', ascending=False)
+        # Create a new DataFrame with the required columns and formatting
+        output_data = {
+            'Number': range(1, len(df_to_process) + 1),  # 1, 2, 3, etc.
+            'Identification': df_to_process['Identifikácia'],  # Column A
+            'Index': df_to_process['index'],  # Column B
+            'Name': df_to_process['meno'],  # Column E
+            'Surname': df_to_process['priezvisko'],  # Column F
+            'Method': df_to_process['metoda'],  # Column G
+            'Level': df_to_process['stupeň'],  # Column H (Slovak diacritic)
+            'Expiry_date': df_to_process['koniecplatnosti'].dt.strftime('%d/%m/%y'),
+            'Number_of_days_from_now': df_to_process['Number_of_days_from_now'],
+            'Training_center': df_to_process['Training_center'],  # Column AC
+        }
 
-    # Re-assign the 'Number' column to ensure sequential numbering after sorting
-    expire_soon_output_df['Number'] = range(1, len(expire_soon_output_df) + 1)
-    already_expired_output_df['Number'] = range(1, len(already_expired_output_df) + 1)
+        output_df = pd.DataFrame(output_data)
 
-    # Write the soon-to-expire DataFrame to an Excel file
-    if not expire_soon_output_df.empty:
-        with pd.ExcelWriter(expire_soon_file, engine='openpyxl') as writer:
-            expire_soon_output_df.to_excel(writer, index=False, sheet_name='Expire Soon')
+        # Sort DataFrame by 'Number_of_days_from_now'
+        output_df = output_df.sort_values(by='Number_of_days_from_now', ascending=sort_ascending)
 
-    # Write the already expired DataFrame to an Excel file
-    if not already_expired_output_df.empty:
-        with pd.ExcelWriter(already_expired_file, engine='openpyxl') as writer:
-            already_expired_output_df.to_excel(writer, index=False, sheet_name='Already Expired')
+        # Re-assign the 'Number' column to ensure sequential numbering after sorting
+        output_df['Number'] = range(1, len(output_df) + 1)
 
-    print(f"Expire Soon data saved to {expire_soon_file}")
-    print(f"Already Expired data saved to {already_expired_file}")
+        # Write the DataFrame to an Excel file
+        with pd.ExcelWriter(output_file, engine='openpyxl') as writer:
+            output_df.to_excel(writer, index=False)
+
+        print(f"Data saved to {output_file}")
+
+    # Process and save DataFrames
+    # For expire_soon_df_rest
+    process_and_save(expire_soon_df_rest, expire_soon_file, sort_ascending=True)
+    # For expire_soon_df_zly
+    process_and_save(expire_soon_df_zly, expire_soon_file_zly, sort_ascending=True)
+    # For already_expired_df_rest
+    process_and_save(already_expired_df_rest, already_expired_file, sort_ascending=False)
+    # For already_expired_df_zly
+    process_and_save(already_expired_df_zly, already_expired_file_zly, sort_ascending=False)
