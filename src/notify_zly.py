@@ -53,7 +53,7 @@ def create_message(row):
         return f"vyprší o {days} dní, dňa {expiry_date}"
 
 
-# Function to check if today is in the second half of December
+# Function to check if today is in December
 def check_database_update_notification():
     today = datetime.now()
     if today.month == 12 and today.day >= 1:
@@ -79,9 +79,13 @@ def add_to_do_not_notify(selected_candidates):
 
 
 # Create the pop-up window
-def create_notification_window():
+def create_notification_window(candidates_to_notify_df):
     root = Tk()
     root.title("C-WT Expiring Soon Notification")
+
+    # Set the background color for the China notification window
+    bg_color = 'gray'  # You can choose any color you like
+    root.configure(bg=bg_color)
 
     # Set the window to be resizable
     root.resizable(True, True)  # Allow window resizing in both directions
@@ -89,10 +93,14 @@ def create_notification_window():
     # Set a larger initial window size
     root.geometry("1000x700")  # Increase width and height
 
+    # Create the header label with large font
+    header_font = Font(family="Helvetica", size=24, weight="bold")
+    Label(root, text="🇨🇳 CHINA NOTIFICATION WINDOW 🇨🇳\n🇨🇳 🇨🇳 🇨🇳 🇨🇳 🇨🇳 🇨🇳 🇨🇳 🇨🇳 🇨🇳 🇨🇳", font=header_font, bg=bg_color).pack(pady=10)
+
     # Set up a scrollable canvas
-    canvas = Canvas(root)
+    canvas = Canvas(root, bg=bg_color)
     scrollbar = Scrollbar(root, orient="vertical", command=canvas.yview)
-    scrollable_frame = Frame(canvas)
+    scrollable_frame = Frame(canvas, bg=bg_color)
 
     # Configure the scrollable area
     scrollable_frame.bind(
@@ -127,54 +135,52 @@ def create_notification_window():
     warning_color = "red"
     mild_warning_color = "orange"
 
-    # Create checkboxes and labels for each candidate that is not in the do_not_notify list
-    for index, row in expire_soon_df.iterrows():
+    # Create checkboxes and labels for each candidate
+    for index, row in candidates_to_notify_df.iterrows():
         candidate_id = row['Index']
 
-        if not is_in_do_not_notify(candidate_id):
-            var_do_not_notify = BooleanVar()
-            var_email_sent = BooleanVar()
+        var_do_not_notify = BooleanVar()
+        var_email_sent = BooleanVar()
 
-            # Pre-tick 'Email Sent' checkbox if candidate is in email_sent_df
-            if not email_sent_df[email_sent_df['Index'] == candidate_id].empty:
-                var_email_sent.set(True)
+        # Pre-tick 'Email Sent' checkbox if candidate is in email_sent_df
+        if not email_sent_df[email_sent_df['Index'] == candidate_id].empty:
+            var_email_sent.set(True)
 
-            check_vars.append((candidate_id, var_do_not_notify, var_email_sent))
-            days_message = create_message(row)
+        check_vars.append((candidate_id, var_do_not_notify, var_email_sent))
+        days_message = create_message(row)
 
-            # Create a frame to hold the checkboxes and the message
-            row_frame = Frame(scrollable_frame)
-            row_frame.pack(fill='x', pady=5)
+        # Create a frame to hold the checkboxes and the message
+        row_frame = Frame(scrollable_frame, bg=bg_color)
+        row_frame.pack(fill='x', pady=5)
 
-            # Add 'Do Not Notify' checkbox
-            Checkbutton(row_frame, text="Nezobrazovať", variable=var_do_not_notify, font=bold_font, fg="red").pack(
-                side='left')
+        # Add 'Do Not Notify' checkbox
+        Checkbutton(row_frame, text="Nezobrazovať", variable=var_do_not_notify, font=bold_font, fg="red", bg=bg_color).pack(
+            side='left')
 
-            # Add 'Email Sent' checkbox
-            Checkbutton(row_frame, text="Upozornený", variable=var_email_sent, fg='green').pack(side='left')
+        # Add 'Email Sent' checkbox
+        Checkbutton(row_frame, text="Upozornený", variable=var_email_sent, fg='green', bg=bg_color).pack(side='left')
 
-            # Display the message in parts, with styles applied only to certain elements
-            Label(row_frame, text=f"{row['Number']}  -", font=bold_font).pack(side='left')
-            Label(row_frame, text=f"{row['Identification']} Certifikát pod indexom ", font=normal_font).pack(
-                side='left')
-            Label(row_frame, text=f"{row['Index']}", font=bold_font).pack(side='left')
-            Label(row_frame, text=f" uchádzača ", font=normal_font).pack(side='left')
-            Label(row_frame, text=f"{row['Name']} {row['Surname']}", font=bold_font).pack(side='left')
-            if row.get('Training_center') and pd.notna(row['Training_center']):
-                Label(row_frame, text=f"({row['Training_center']})", font=bold_font).pack(side='left')
-            Label(row_frame, text=f" na metódu ", font=normal_font).pack(side='left')
-            Label(row_frame, text=f"{row['Method']}", font=bold_font).pack(side='left')
-            Label(row_frame, text=f" stupeň ", font=normal_font).pack(side='left')
-            Label(row_frame, text=f"{row['Level']}", font=bold_font).pack(side='left')
+        # Display the message in parts, with styles applied only to certain elements
+        Label(row_frame, text=f"{row['Number']}  -", font=bold_font, bg=bg_color).pack(side='left')
+        Label(row_frame, text=f"{row['Identification']} Certifikát pod indexom ", font=normal_font, bg=bg_color).pack(
+            side='left')
+        Label(row_frame, text=f"{row['Index']}", font=bold_font, bg=bg_color).pack(side='left')
+        Label(row_frame, text=f" uchádzača ", font=normal_font, bg=bg_color).pack(side='left')
+        Label(row_frame, text=f"{row['Name']} {row['Surname']}", font=bold_font, bg=bg_color).pack(side='left')
+        if row.get('Training_center') and pd.notna(row['Training_center']):
+            Label(row_frame, text=f"({row['Training_center']})", font=bold_font, bg=bg_color).pack(side='left')
+        Label(row_frame, text=f" na metódu ", font=normal_font, bg=bg_color).pack(side='left')
+        Label(row_frame, text=f"{row['Method']}", font=bold_font, bg=bg_color).pack(side='left')
+        Label(row_frame, text=f" stupeň ", font=normal_font, bg=bg_color).pack(side='left')
 
-            # Highlight Number_of_days_from_now and Expiry_date in red or orange
-            days = int(row['Number_of_days_from_now'])
-            if days <= 30:
-                Label(row_frame, text=f" {days_message}", fg=warning_color, font=warning_font).pack(side='left')
-            elif 31 <= days <= 60:
-                Label(row_frame, text=f" {days_message}", fg=mild_warning_color, font=warning_font).pack(side='left')
-            else:
-                Label(row_frame, text=f" {days_message}", font=warning_font).pack(side='left')
+        # Highlight Number_of_days_from_now and Expiry_date in red or orange
+        days = int(row['Number_of_days_from_now'])
+        if days <= 30:
+            Label(row_frame, text=f" {days_message}", fg=warning_color, font=warning_font, bg=bg_color).pack(side='left')
+        elif 31 <= days <= 60:
+            Label(row_frame, text=f" {days_message}", fg=mild_warning_color, font=warning_font, bg=bg_color).pack(side='left')
+        else:
+            Label(row_frame, text=f" {days_message}", font=warning_font, bg=bg_color).pack(side='left')
 
     # Function to handle the OK button click
     def on_ok():
@@ -204,7 +210,7 @@ def create_notification_window():
         root.destroy()
 
     # Create a frame for buttons at the bottom
-    button_frame = Frame(root)
+    button_frame = Frame(root, bg=bg_color)
     button_frame.pack(pady=10, side="bottom")
 
     # Add OK and Cancel buttons, centered at the bottom
@@ -214,13 +220,13 @@ def create_notification_window():
     # Add the italic message at the bottom
     italic_font = Font(family="Helvetica", size=10, slant=ITALIC)
     Label(root,
-          text="CHINA NOTIFICATION WINDOW\nThe database root file needs to be updated every year.\nDate of the last update: 8.10.2024",
-          font=italic_font).pack(pady=10)
+          text="The database root file needs to be updated every year.\nDate of the last update: 8.10.2024",
+          font=italic_font, bg=bg_color).pack(pady=10)
 
     # Check if today is in December and show the update message
     if check_database_update_notification():
         Label(root, text="Please contact Kasim to update the database file by the end of December.", font=italic_font,
-              fg="red").pack(pady=5)
+              fg="red", bg=bg_color).pack(pady=5)
 
     # Pack the canvas and scrollbar
     canvas.pack(side="left", fill="both", expand=True)  # Expand the canvas to fit the window
@@ -230,5 +236,11 @@ def create_notification_window():
 
 
 if __name__ == '__main__':
-    # Run the notification window
-    create_notification_window()
+    # Get candidates to notify by excluding those in do_not_notify_df
+    candidates_to_notify_df = expire_soon_df[~expire_soon_df['Index'].isin(do_not_notify_df['Index'])]
+
+    if candidates_to_notify_df.empty:
+        print("There are zero candidates whose certificates are going to expire from Zhuhai.")
+    else:
+        # Run the notification window with candidates to notify
+        create_notification_window(candidates_to_notify_df)
