@@ -83,11 +83,11 @@ def run_scripts():
 
         # Check if today is Friday (weekday() == 4)
         today = datetime.now()
-        if today.weekday() == 4:  # Monday is 0, Friday is 4
-            print("Today is Friday. Running notify_zly.py...")
+        if today.weekday() == 0:  # Monday is 0, Friday is 4
+            print("Today is Monday. Running notify_zly.py...")
             subprocess.run([python_executable, notify_zly_script], check=True)
         else:
-            print("Today is not Friday. Skipping notify_zly.py.")
+            print("Today is not Monday. Skipping notify_zly.py.")
 
     except subprocess.CalledProcessError as e:
         print(f"Error running scripts: {e}")
