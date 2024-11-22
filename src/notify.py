@@ -10,7 +10,8 @@ base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # Roo
 data_folder = os.path.join(base_dir, 'data')  # Path to the data folder
 expire_soon_file = os.path.join(data_folder, 'expire_soon.xlsx')  # Expiring soon file
 do_not_notify_file = os.path.join(data_folder, 'do_not_notify.xlsx')  # Do not notify file
-email_sent_file = os.path.join(data_folder, 'email_sent.xlsx')  # Email sent file
+email_sent_file_local = os.path.join(data_folder, 'email_sent.xlsx')  # Email sent file
+email_sent_file = r'\\ARCHIV\data\data CWT\upozornenie\email_sent.xlsx'  # Email sent file
 
 # Load the Excel files into DataFrames
 expire_soon_df = pd.read_excel(expire_soon_file)
@@ -22,9 +23,13 @@ else:
     do_not_notify_df = pd.DataFrame(columns=expire_soon_df.columns)
 
 # If the email_sent file exists, load it, otherwise create an empty DataFrame
-if os.path.exists(email_sent_file):
-    email_sent_df = pd.read_excel(email_sent_file)
-else:
+try:
+    if os.path.exists(email_sent_file):
+        email_sent_df = pd.read_excel(email_sent_file)
+    else:
+        email_sent_df = pd.DataFrame(columns=expire_soon_df.columns)
+except Exception as e:
+    messagebox.showerror("Error", f"Failed to access {email_sent_file}.\n{str(e)}")
     email_sent_df = pd.DataFrame(columns=expire_soon_df.columns)
 
 
