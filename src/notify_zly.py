@@ -2,8 +2,6 @@ import os
 from datetime import datetime
 from tkinter import Tk, Checkbutton, Button, BooleanVar, messagebox, Canvas, Scrollbar, Frame, Label, PhotoImage
 from tkinter.font import Font, ITALIC
-from PIL import Image, ImageTk
-
 import pandas as pd
 
 # Define relative paths based on the script's location
