@@ -25,7 +25,6 @@ RAW_FILES = {
     "sort.py": f"{RAW_BASE_URL}/src/sort.py",
     "notify.py": f"{RAW_BASE_URL}/src/notify.py",
     "notify_zly.py": f"{RAW_BASE_URL}/src/notify_zly.py",
-    "China.png": f"{RAW_BASE_URL}/images/China.png"
 }
 
 # Ensure the Python executable is the same as the one running main.py
