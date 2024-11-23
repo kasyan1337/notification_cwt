@@ -1,13 +1,15 @@
 import os
 from datetime import datetime
-from tkinter import Tk, Checkbutton, Button, BooleanVar, messagebox, Canvas, Scrollbar, Frame, Label
+from tkinter import Tk, Checkbutton, Button, BooleanVar, messagebox, Canvas, Scrollbar, Frame, Label, PhotoImage
 from tkinter.font import Font, ITALIC
+from PIL import Image, ImageTk
 
 import pandas as pd
 
 # Define relative paths based on the script's location
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # Root project directory
 data_folder = os.path.join(base_dir, 'data')  # Path to the data folder
+images_folder = os.path.join(base_dir, 'images')  # Path to the data folder
 expire_soon_file = os.path.join(data_folder, 'expire_soon_zly.xlsx')  # Expiring soon file
 do_not_notify_file = os.path.join(data_folder, 'do_not_notify.xlsx')  # Do not notify file
 email_sent_file_local = os.path.join(data_folder, 'email_sent.xlsx')  # Email sent file
@@ -95,7 +97,15 @@ def create_notification_window(candidates_to_notify_df):
 
     # Create the header label with large font
     header_font = Font(family="Helvetica", size=24, weight="bold")
-    Label(root, text="🇨🇳 CHINA NOTIFICATION WINDOW 🇨🇳\n🇨🇳 🇨🇳 🇨🇳 🇨🇳 🇨🇳 🇨🇳 🇨🇳 🇨🇳 🇨🇳 🇨🇳", font=header_font, bg=bg_color).pack(pady=10)
+    # Load the flag image
+    flag_image_path = os.path.join(images_folder, 'China.png')  # Provide the path to your image
+    flag_image = PhotoImage(file=flag_image_path).subsample(2, 2)  # Adjust subsample factors as needed
+
+    # Add the image to the Label
+    header_label = Label(root, text="CHINA NOTIFICATION WINDOW", font=header_font, image=flag_image, compound='top',
+                         bg=bg_color)
+    header_label.image = flag_image  # Keep a reference to avoid garbage collection
+    header_label.pack(pady=10)
 
     # Set up a scrollable canvas
     canvas = Canvas(root, bg=bg_color)
