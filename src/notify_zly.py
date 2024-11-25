@@ -1,4 +1,5 @@
 import os
+import sys
 from datetime import datetime
 from tkinter import Tk, Checkbutton, Button, BooleanVar, messagebox, Canvas, Scrollbar, Frame, Label, PhotoImage
 from tkinter.font import Font, ITALIC
@@ -14,7 +15,28 @@ email_sent_file_local = os.path.join(data_folder, 'email_sent.xlsx')  # Email se
 email_sent_file = r'\\ARCHIV\data\data CWT\upozornenie\email_sent.xlsx'  # Email sent file
 
 # Load the Excel files into DataFrames
-expire_soon_df = pd.read_excel(expire_soon_file)
+if os.path.exists(expire_soon_file):
+    # Load the Excel file into a DataFrame
+    expire_soon_df = pd.read_excel(expire_soon_file)
+else:
+    print(f"The file {expire_soon_file} does not exist. There are zero candidates whose certificates are going to expire from Zhuhai.")
+    sys.exit(0)  # Exit the script gracefully
+
+# If the do_not_notify file exists, load it, otherwise create an empty DataFrame
+if os.path.exists(do_not_notify_file):
+    do_not_notify_df = pd.read_excel(do_not_notify_file)
+else:
+    do_not_notify_df = pd.DataFrame(columns=['Index'])  # Adjusted columns
+
+# If the email_sent file exists, load it, otherwise create an empty DataFrame
+try:
+    if os.path.exists(email_sent_file):
+        email_sent_df = pd.read_excel(email_sent_file)
+    else:
+        email_sent_df = pd.DataFrame(columns=['Index'])  # Adjusted columns
+except Exception as e:
+    messagebox.showerror("Error", f"Failed to access {email_sent_file}.\n{str(e)}")
+    email_sent_df = pd.DataFrame(columns=['Index'])  # Adjusted columns
 
 # If the do_not_notify file exists, load it, otherwise create an empty DataFrame
 if os.path.exists(do_not_notify_file):
